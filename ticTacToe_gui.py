@@ -39,7 +39,23 @@ class TicTacToeGUI:
             pady=6,
             relief="flat"
         )
-        self.score_label.pack()
+        self.score_label.grid(row=0, column=0, padx=(0, 10))
+        
+        # Reset Scores Button (Placed directly next to the scoreboard)
+        self.reset_scores_button = tk.Button(
+            score_frame, 
+            text="Reset Scores", 
+            font=("Helvetica", 10, "bold"), 
+            bg="#95A5A6", 
+            fg="#ECF0F1",
+            activebackground="#7F8C8D", 
+            activeforeground="#ECF0F1",
+            relief="flat",
+            padx=8,
+            pady=4,
+            command=self.reset_scores
+        )
+        self.reset_scores_button.grid(row=0, column=1)
         
         # Grid Frame to hold the 3x3 board
         grid_frame = tk.Frame(self.root, bg="#2C3E50")
@@ -71,33 +87,17 @@ class TicTacToeGUI:
         self.reset_button = tk.Button(
             control_frame, 
             text="Restart Game", 
-            font=("Helvetica", 11, "bold"), 
+            font=("Helvetica", 12, "bold"), 
             bg="#E74C3C", 
             fg="#ECF0F1",
             activebackground="#C0392B", 
             activeforeground="#ECF0F1",
             relief="flat",
-            padx=10,
+            padx=15,
             pady=5,
             command=self.reset_game
         )
-        self.reset_button.grid(row=0, column=0, padx=10)
-        
-        # Reset Scores Button
-        self.reset_scores_button = tk.Button(
-            control_frame, 
-            text="Reset Scores", 
-            font=("Helvetica", 11, "bold"), 
-            bg="#95A5A6", 
-            fg="#ECF0F1",
-            activebackground="#7F8C8D", 
-            activeforeground="#ECF0F1",
-            relief="flat",
-            padx=10,
-            pady=5,
-            command=self.reset_scores
-        )
-        self.reset_scores_button.grid(row=0, column=1, padx=10)
+        self.reset_button.pack()
 
     def make_move(self, idx):
         # Check if the square is empty

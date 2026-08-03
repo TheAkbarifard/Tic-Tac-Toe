@@ -4,10 +4,12 @@ A clean, modern, dark-themed desktop implementation of the classic Tic-Tac-Toe g
 
 ## Features
 - **Sleek Aesthetics**: A dark theme designed to look modern and elegant.
+- **Scoreboard Tracking**: Tracks the total wins for Player **X** and Player **O**.
+- **Score Reset**: A dedicated **Reset Scores** button located directly next to the score indicators.
 - **Visual Feedback**: Distinct color-coding for Player **X** (Blue) and Player **O** (Orange).
 - **Responsive Controls**: Smooth grid layout with interactive tiles.
 - **Victory & Draw Detection**: Automatically detects row, column, and diagonal matches, or when the board is full.
-- **Reset Button**: Restart the game at any point to play again.
+- **Restart Game Button**: Start a new match at any time without resetting the historical scores.
 
 ## Requirements
 - Python 3.x
@@ -25,4 +27,5 @@ A clean, modern, dark-themed desktop implementation of the classic Tic-Tac-Toe g
    ```
 
 ## Screenshot
-*(Add a screenshot of your running application here!)*
+
+![Tic-Tac-Toe Screenshot](screenshot.png)
