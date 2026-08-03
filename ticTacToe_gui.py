@@ -10,6 +10,7 @@ class TicTacToeGUI:
         self.turn = "X"
         self.board = [" " for _ in range(9)]
         self.buttons = []
+        self.game_over = False
         
         # Win counters
         self.score_x = 0
@@ -18,7 +19,7 @@ class TicTacToeGUI:
         # Status Label showing whose turn it is or who won
         self.status_label = tk.Label(
             self.root, 
-            text="Player X's Turn", 
+            text="X's Turn", 
             font=("Helvetica", 16, "bold"), 
             bg="#2C3E50", 
             fg="#ECF0F1"
@@ -41,7 +42,7 @@ class TicTacToeGUI:
         )
         self.score_label.grid(row=0, column=0, padx=(0, 10))
         
-        # Reset Scores Button (Placed directly next to the scoreboard)
+        # Reset Scores Button
         self.reset_scores_button = tk.Button(
             score_frame, 
             text="Reset Scores", 
@@ -99,7 +100,15 @@ class TicTacToeGUI:
         )
         self.reset_button.pack()
 
+        # Bind click event to the main root window to reset after the game ends
+        self.root.bind("<Button-1>", self.handle_global_click)
+
     def make_move(self, idx):
+        # If the game is already over, a click resets the game
+        if self.game_over:
+            self.reset_game()
+            return
+
         # Check if the square is empty
         if self.board[idx] == " ":
             self.board[idx] = self.turn
@@ -115,7 +124,7 @@ class TicTacToeGUI:
             
             # Check for win or draw
             if self.check_win(self.turn):
-                self.status_label.config(text=f"Player {self.turn} Wins!", fg="#2ECC71")
+                self.status_label.config(text=f"{self.turn} Wins!", fg="#2ECC71")
                 
                 # Increment the score
                 if self.turn == "X":
@@ -124,13 +133,16 @@ class TicTacToeGUI:
                     self.score_o += 1
                 self.update_score_display()
                 self.disable_board()
+                self.game_over = True
                 
             elif " " not in self.board:
                 self.status_label.config(text="It's a Draw!", fg="#F1C40F")
+                self.disable_board()
+                self.game_over = True
             else:
                 # Switch turn
                 self.turn = "O" if self.turn == "X" else "X"
-                self.status_label.config(text=f"Player {self.turn}'s Turn", fg="#ECF0F1")
+                self.status_label.config(text=f"{self.turn}'s Turn", fg="#ECF0F1")
 
     def check_win(self, player):
         # 8 possible win paths
@@ -142,8 +154,17 @@ class TicTacToeGUI:
         return any(all(self.board[i] == player for i in state) for state in win_states)
 
     def disable_board(self):
+        # We disable standard moves but keep game clickable for restart
         for btn in self.buttons:
-            btn.config(state="disabled")
+            if btn['text'] == "":
+                btn.config(state="disabled")
+
+    def handle_global_click(self, event):
+        # If the game is over and the click is not on the "Reset Scores" button, reset the game
+        if self.game_over:
+            if event.widget == self.reset_scores_button:
+                return
+            self.reset_game()
 
     def update_score_display(self):
         self.score_label.config(text=f"X: {self.score_x}   |   O: {self.score_o}")
@@ -156,7 +177,8 @@ class TicTacToeGUI:
     def reset_game(self):
         self.turn = "X"
         self.board = [" " for _ in range(9)]
-        self.status_label.config(text="Player X's Turn", fg="#ECF0F1")
+        self.game_over = False
+        self.status_label.config(text="X's Turn", fg="#ECF0F1")
         for btn in self.buttons:
             btn.config(
                 text="", 
