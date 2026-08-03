@@ -202,7 +202,7 @@ class TicTacToeGUI:
             
             # Check for win or draw
             if self.check_win(self.turn):
-                self.status_label.config(text=f"{self.turn} Wins! Click anywhere to restart.", fg="#2ECC71")
+                self.status_label.config(text=f"{self.turn} Wins!", fg="#2ECC71")
                 
                 # Increment the score
                 if self.turn == "X":
@@ -217,7 +217,7 @@ class TicTacToeGUI:
                 self.game_over = True
                 
             elif " " not in self.board:
-                self.status_label.config(text="It's a Draw! Click anywhere to restart.", fg="#F1C40F")
+                self.status_label.config(text="It's a Draw!", fg="#F1C40F")
                 self.last_winner = None
                 self.last_loser = None
                 self.game_over = True
