@@ -1,4 +1,5 @@
 import tkinter as tk
+import random
 
 class TicTacToeGUI:
     def __init__(self, root):
@@ -7,7 +8,8 @@ class TicTacToeGUI:
         self.root.configure(bg="#2C3E50")  # Sleek dark background
         self.root.resizable(False, False)
         
-        self.turn = "X"
+        self.starting_player = "X"
+        self.turn = self.starting_player
         self.board = [" " for _ in range(9)]
         self.buttons = []
         self.game_over = False
@@ -15,6 +17,8 @@ class TicTacToeGUI:
         # Win counters
         self.score_x = 0
         self.score_o = 0
+        self.last_winner = None
+        self.last_loser = None
         
         # Status Label showing whose turn it is or who won
         self.status_label = tk.Label(
@@ -82,7 +86,7 @@ class TicTacToeGUI:
             
         # Control Buttons Frame
         control_frame = tk.Frame(self.root, bg="#2C3E50")
-        control_frame.pack(pady=15)
+        control_frame.pack(pady=10)
         
         # Reset Game Button
         self.reset_button = tk.Button(
@@ -100,6 +104,77 @@ class TicTacToeGUI:
         )
         self.reset_button.pack()
 
+        # Settings Frame (Compact dropdown and info icon)
+        settings_frame = tk.Frame(self.root, bg="#2C3E50")
+        settings_frame.pack(pady=(0, 5))
+        
+        mode_label = tk.Label(
+            settings_frame,
+            text="First Turn:",
+            font=("Helvetica", 10, "bold"),
+            bg="#2C3E50",
+            fg="#BDC3C7"
+        )
+        mode_label.grid(row=0, column=0, padx=(0, 5))
+        
+        # OptionMenu for starting modes
+        self.start_mode = tk.StringVar(value="Alternate")
+        mode_menu = tk.OptionMenu(
+            settings_frame,
+            self.start_mode,
+            "Alternate",
+            "Random",
+            "Loser Starts",
+            command=self.on_mode_change
+        )
+        mode_menu.config(
+            font=("Helvetica", 9, "bold"),
+            bg="#34495E",
+            fg="#ECF0F1",
+            activebackground="#1ABC9C",
+            activeforeground="#ECF0F1",
+            relief="flat",
+            highlightthickness=0,
+            padx=5,
+            pady=2,
+            width=12  # Fixed width to prevent layout shifting when options change
+        )
+        mode_menu["menu"].config(
+            font=("Helvetica", 9),
+            bg="#34495E",
+            fg="#ECF0F1",
+            activebackground="#1ABC9C",
+            activeforeground="#ECF0F1"
+        )
+        mode_menu.grid(row=0, column=1, padx=(0, 5))
+        
+        # Info icon
+        self.info_label = tk.Label(
+            settings_frame,
+            text="ⓘ",
+            font=("Helvetica", 12, "bold"),
+            bg="#2C3E50",
+            fg="#95A5A6",
+            cursor="hand2"
+        )
+        self.info_label.grid(row=0, column=2)
+        self.info_label.bind("<Enter>", self.show_tooltip)
+        self.info_label.bind("<Leave>", self.hide_tooltip)
+        
+        # Tooltip description label
+        self.desc_label = tk.Label(
+            self.root,
+            text="",
+            font=("Helvetica", 9, "italic"),
+            bg="#2C3E50",
+            fg="#BDC3C7"
+        )
+        self.desc_label.pack(pady=(0, 10))
+
+        # Bind mouse wheel scrolling on the dropdown menu and label to cycle selections
+        mode_menu.bind("<MouseWheel>", self.handle_mouse_wheel)
+        mode_label.bind("<MouseWheel>", self.handle_mouse_wheel)
+
         # Bind click event to the main root window to reset after the game ends
         self.root.bind("<Button-1>", self.handle_global_click)
 
@@ -115,29 +190,36 @@ class TicTacToeGUI:
             
             # Stylize X and O differently
             color = "#3498DB" if self.turn == "X" else "#E67E22"
+            
+            # Update button visually without changing standard state to 'disabled'
+            # (Matches active background/foreground to standard colors so hover states lock stably)
             self.buttons[idx].config(
                 text=self.turn, 
                 fg=color,
-                state="disabled",
-                disabledforeground=color
+                activebackground="#34495E",
+                activeforeground=color
             )
             
             # Check for win or draw
             if self.check_win(self.turn):
-                self.status_label.config(text=f"{self.turn} Wins!", fg="#2ECC71")
+                self.status_label.config(text=f"{self.turn} Wins! Click anywhere to restart.", fg="#2ECC71")
                 
                 # Increment the score
                 if self.turn == "X":
                     self.score_x += 1
                 else:
                     self.score_o += 1
+                
+                self.last_winner = self.turn
+                self.last_loser = "O" if self.turn == "X" else "X"
+                
                 self.update_score_display()
-                self.disable_board()
                 self.game_over = True
                 
             elif " " not in self.board:
-                self.status_label.config(text="It's a Draw!", fg="#F1C40F")
-                self.disable_board()
+                self.status_label.config(text="It's a Draw! Click anywhere to restart.", fg="#F1C40F")
+                self.last_winner = None
+                self.last_loser = None
                 self.game_over = True
             else:
                 # Switch turn
@@ -153,18 +235,68 @@ class TicTacToeGUI:
         ]
         return any(all(self.board[i] == player for i in state) for state in win_states)
 
-    def disable_board(self):
-        # We disable standard moves but keep game clickable for restart
-        for btn in self.buttons:
-            if btn['text'] == "":
-                btn.config(state="disabled")
-
     def handle_global_click(self, event):
-        # If the game is over and the click is not on the "Reset Scores" button, reset the game
+        # If the game is over and the click is not on settings widgets or reset scores, reset the game
         if self.game_over:
-            if event.widget == self.reset_scores_button:
+            if event.widget in [self.reset_scores_button, self.info_label]:
                 return
             self.reset_game()
+
+    def handle_mouse_wheel(self, event):
+        # Cycle through dropdown options using the mouse wheel when hovering
+        options = ["Alternate", "Random", "Loser Starts"]
+        current_val = self.start_mode.get()
+        if current_val in options:
+            idx = options.index(current_val)
+            if event.delta > 0:  # Scroll Up
+                new_idx = (idx - 1) % len(options)
+            else:  # Scroll Down
+                new_idx = (idx + 1) % len(options)
+            
+            new_mode = options[new_idx]
+            self.start_mode.set(new_mode)
+            self.on_mode_change(new_mode)
+
+    def determine_next_starter(self):
+        mode = self.start_mode.get()
+        if mode == "Alternate":
+            # Alternate starter from the last game
+            self.starting_player = "O" if self.starting_player == "X" else "X"
+            return self.starting_player
+        elif mode == "Random":
+            return random.choice(["X", "O"])
+        elif mode == "Loser Starts":
+            if self.last_loser is not None:
+                return self.last_loser
+            else:
+                # Alternate if there was a draw
+                self.starting_player = "O" if self.starting_player == "X" else "X"
+                return self.starting_player
+        return "X"
+
+    def show_tooltip(self, event):
+        mode = self.start_mode.get()
+        descriptions = {
+            "Alternate": "Alternate starting player each round.",
+            "Random": "Select starting player randomly at reset.",
+            "Loser Starts": "The loser of the last round starts first."
+        }
+        self.desc_label.config(text=descriptions.get(mode, ""))
+        self.info_label.config(fg="#1ABC9C")  # Highlight 'i' icon
+
+    def hide_tooltip(self, event):
+        self.desc_label.config(text="")
+        self.info_label.config(fg="#95A5A6")
+
+    def on_mode_change(self, selected_mode):
+        descriptions = {
+            "Alternate": "Alternate starting player each round.",
+            "Random": "Select starting player randomly at reset.",
+            "Loser Starts": "The loser of the last round starts first."
+        }
+        self.desc_label.config(text=descriptions.get(selected_mode, ""))
+        # Auto-hide tooltip description after 2 seconds
+        self.root.after(2000, lambda: self.desc_label.config(text="") if self.desc_label.cget("text") == descriptions.get(selected_mode, "") else None)
 
     def update_score_display(self):
         self.score_label.config(text=f"X: {self.score_x}   |   O: {self.score_o}")
@@ -172,19 +304,24 @@ class TicTacToeGUI:
     def reset_scores(self):
         self.score_x = 0
         self.score_o = 0
+        self.last_winner = None
+        self.last_loser = None
         self.update_score_display()
 
     def reset_game(self):
-        self.turn = "X"
+        self.turn = self.determine_next_starter()
+        self.starting_player = self.turn
         self.board = [" " for _ in range(9)]
         self.game_over = False
-        self.status_label.config(text="X's Turn", fg="#ECF0F1")
+        self.status_label.config(text=f"{self.turn}'s Turn", fg="#ECF0F1")
         for btn in self.buttons:
             btn.config(
                 text="", 
                 state="normal", 
                 bg="#34495E", 
-                fg="#ECF0F1"
+                fg="#ECF0F1",
+                activebackground="#1ABC9C",
+                activeforeground="#ECF0F1"
             )
 
 if __name__ == "__main__":
